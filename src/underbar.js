@@ -7,6 +7,7 @@
   // seem very useful, but remember it--if a function needs to provide an
   // iterator when the user does not pass one in, this will be handy.
   _.identity = function(val) {
+    return val;
   };
 
   /**
@@ -37,6 +38,11 @@
   // Like first, but for the last elements. If n is undefined, return just the
   // last element.
   _.last = function(array, n) {
+    if (n === 0) {
+      return [];
+    }
+
+    return n === undefined ? array[array.length - 1] : array.slice(-n);
   };
 
   // Call iterator(value, key, collection) for each element of collection.
@@ -45,6 +51,30 @@
   // Note: _.each does not have a return value, but rather simply runs the
   // iterator function over each item in the input collection.
   _.each = function(collection, iterator) {
+    // i: array or obj
+    // o: mutated array or obj
+    // c
+    // e
+
+    // AssertionError: expected [ Array(3) ] to deeply equal [ [ 'a', 1 ], [ 'b', 2 ], [ 'c', 3 ] ]
+
+    // determine if array or obj
+    // if it is an array
+    if (Array.isArray(collection)) {
+      // debugger;
+      // for loop
+      for (var i = 0; i < collection.length; i++) {
+        // apply iterator function on array[i]
+        iterator(collection[i], i, collection);
+      }
+    } else {
+      // if it is an obj
+      // for in loop
+      for (var key in collection) {
+        // apply iterator function on obj[i]
+        iterator(collection[key], key, collection);
+      }
+    }
   };
 
   // Returns the index at which value can be found in the array, or -1 if value
@@ -66,16 +96,90 @@
 
   // Return all elements of an array that pass a truth test.
   _.filter = function(collection, test) {
+    // i: array
+    // o: array of elements that pass the test
+    // c:
+    // e:
+
+    var resultArray = [];
+
+    // call each on the array
+    _.each(collection, function(element) {
+      // within the each, call on the test with value as inputs
+      // if the test on value is true, push element to results array, otherwise, do nothing
+      if (test(element)) {
+        resultArray.push(element);
+      }
+    });
+
+    // return the filtered array
+    return resultArray;
+
+    //  // call each on the array
+    //  return _.each(collection, function(element) {
+    //   // within the each, call on the test with value as inputs
+    //   // if the test on value is true, push element to results array, otherwise, do nothing
+    //   if (test(element)) {
+    //     this.push(element);
+    //   }
+    // }, []);
   };
 
   // Return all elements of an array that don't pass a truth test.
   _.reject = function(collection, test) {
     // TIP: see if you can re-use _.filter() here, without simply
     // copying code in and modifying it
+
+    // if return !_.fil
+    return _.filter(collection, function(value) {
+      if (!test(value)) {
+        return value;
+      }
+    });
   };
 
   // Produce a duplicate-free version of the array.
+
   _.uniq = function(array, isSorted, iterator) {
+    // i: array
+    // o: sorted array with unique elements
+
+    iterator = iterator === undefined ? _.identity : iterator;
+
+    // create one array to check for iterated values and one for the resulting inputs we want to return
+    var resultsArray = [];
+    var iteratedArray = [];
+
+    // use the each function and pass in the input array
+    _.each(array, function(element) {
+      // use a function to test whether the iterator on the current value is contained within the results array
+      if (iteratedArray.includes(iterator(element))) {
+        return;
+      }
+
+      // if contained, do nothing, otherwise, push to iterated value to the results array
+      resultsArray.push(element);
+      iteratedArray.push(iterator(element));
+    });
+
+    // return results array
+    return resultsArray;
+
+    // // attempt with map
+    // var resultsContainer = new Map();
+
+    // _.each(array, function(element) {
+    //   // use a function to test whether the iterator on the current value is contained within the results array
+    //   if (resultsContainer.has(iterator(element))) {
+    //     return;
+    //   }
+
+    //   // if contained, do nothing, otherwise, push to iterated value to the results array
+    //   resultsContainer.set(iterator(element), element);
+    // });
+
+    // // return results array
+    // return resultsContainer.values();
   };
 
 
@@ -84,6 +188,21 @@
     // map() is a useful primitive iteration function that works a lot
     // like each(), but in addition to running the operation on all
     // the members, it also maintains an array of results.
+    // i: array
+    // o: iterated array
+    // c:
+    // e: iterator undefined
+
+    iterator = iterator === undefined ? _.identity : iterator;
+    // create results array
+    var results = [];
+    // use each
+    _.each(collection, function(value) {
+      results.push(iterator(value));
+    })
+      // run iterator on each element, pushing it into the results array
+    // return results array
+    return results;
   };
 
   /*
@@ -107,24 +226,47 @@
   // Reduces an array or object to a single value by repetitively calling
   // iterator(accumulator, item) for each item. accumulator should be
   // the return value of the previous iterator call.
-  //  
+  //
   // You can pass in a starting value for the accumulator as the third argument
   // to reduce. If no starting value is passed, the first element is used as
   // the accumulator, and is never passed to the iterator. In other words, in
   // the case where a starting value is not passed, the iterator is not invoked
   // until the second element, with the first element as its second argument.
-  //  
+  //
   // Example:
   //   var numbers = [1,2,3];
   //   var sum = _.reduce(numbers, function(total, number){
   //     return total + number;
   //   }, 0); // should be 6
-  //  
+  //
   //   var identity = _.reduce([5], function(total, number){
   //     return total + number * number;
   //   }); // should be 5, regardless of the iterator function passed in
   //          No accumulator is given so the first element is used.
   _.reduce = function(collection, iterator, accumulator) {
+    // input: array or object
+    // output: a single value result of the iterator applied on every element
+    // c:
+    // edge cases: no accumulator is provided
+
+    // if no accumulator is provided, then accumulator is set to the first element of the collection
+    if (accumulator === undefined) {
+      accumulator = _.first(collection);
+      // call each value in collection and for each value
+      _.each(collection.slice(1),function(value) {
+        // set accumulator equal to iterator called on accumulator and the value
+        accumulator = iterator(accumulator, value);
+      });
+
+    } else {
+      _.each(collection,function(value) {
+        // set accumulator equal to iterator called on accumulator and the value
+        accumulator = iterator(accumulator, value);
+      });
+    }
+
+    // return accumulator
+    return accumulator;
   };
 
   // Determine if the array or object contains a given value (using `===`).
@@ -143,12 +285,39 @@
   // Determine whether all of the elements match a truth test.
   _.every = function(collection, iterator) {
     // TIP: Try re-using reduce() here.
+    // i: array
+    // o: boolean for truth test on all elements in array
+    // c:
+    // e: no iterator is provided
+    iterator = iterator === undefined ? _.identity : iterator;
+    // use reduce over collection
+    return _.reduce(collection, function(isTrue, value) {
+      // for each value within colleciton
+      // call iterator on value with an acculumaltor of true
+      return Boolean(iterator(value) && isTrue);
+      // return iterator on every element
+    }, true);
+
+    // return reduce
   };
 
   // Determine whether any of the elements pass a truth test. If no iterator is
   // provided, provide a default one
   _.some = function(collection, iterator) {
     // TIP: There's a very clever way to re-use every() here.
+    // i: array
+    // o: boolean for truth test on any element in array
+    // c:
+    // e: no iterator is provided
+
+    iterator = iterator === undefined ? _.identity : iterator;
+
+    // call and return the opposite of every on the collection
+    return !_.every(collection, function(value) {
+      // for every value, return the opposite of the iterator called on the value
+      return !iterator(value);
+    });
+
   };
 
 
@@ -171,11 +340,51 @@
   //     bla: "even more stuff"
   //   }); // obj1 now contains key1, key2, key3 and bla
   _.extend = function(obj) {
+    // i: multiple objects
+    // o: one object with all key value pairs
+    // c:
+    // e:
+
+    // iterate over each argument to hit every object
+    _.each(arguments, function(argument, index) {
+      // for each argument
+      if (index === 0) {
+        return;
+      }
+      for (var key in argument) {
+        // iteratoe over key value pair
+        // set first argument key-value pair equal to the one that we are iterating over
+        obj[key] = argument[key];
+      }
+    })
+    return obj;
   };
 
   // Like extend, but doesn't ever overwrite a key that already
   // exists in obj
   _.defaults = function(obj) {
+    // i: multiple objects
+    // o: one object with all key value pairs not overriding original values
+    // c:
+    // e:
+
+    // iterate over each argument to hit every object
+    _.each(arguments, function(argument, index) {
+      // for each argument
+      if (index === 0) {
+        return;
+      }
+      for (var key in argument) {
+        // iteratoe over key value pair
+        // set first argument key-value pair equal to the one that we are iterating over if obj has key
+        if (obj[key] !== undefined) {
+          continue;
+        }
+
+        obj[key] = argument[key];
+      }
+    })
+    return obj;
   };
 
 
@@ -219,6 +428,32 @@
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
+    // debugger;
+    // create a results object
+    var memoizedResults = {};
+
+    var funcCalled = JSON.stringify(func);
+
+    // if argument is within the results object, return the value of result at that argument
+    if (funcCalled in memoizedResults) {
+      return memoizedResults[funcCalled];
+    }
+
+    // otherwise, set result at that stringified argument equal to the function called on the argument
+    memoizedResults[funcCalled] = func;
+    // return the value of the result at that argument
+    return memoizedResults[funcCalled];
+
+    // I think we need to use a helper function to access the arguments being passed to func
+    // var helpFunc = function(argumentCalled) {
+    //   if (memoizedResults[stringify(argumentCalled)] === undefined) {
+    //     memoizedResults[stringify(argumentCalled)] = func(argumentCalled);
+    //   }
+
+    //   return memoizedResults[stringify(func)]
+    // }
+
+    // return helpFunc;
   };
 
   // Delays a function for the given number of milliseconds, and then calls
